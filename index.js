@@ -340,7 +340,10 @@ app.get('/event', async (req, res) => {
       // console.log(paymentUrl, "paymentUrl")
       // console.log("SSLCommerz response:", response.data);
     })
-
+ app.get('/payments',async(req,res)=>{
+    const pay=await paymentCollection.find().toArray()
+    res.send(pay)
+ })
 app.get('/payments/:email/:trxid', async (req, res) => {
   const email = req.params.email;
   const trxid = req.params.trxid;
