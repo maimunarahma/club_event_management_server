@@ -4,12 +4,20 @@ const cors = require('cors')
 const axios = require('axios');
 const port = process.env.PORT || 5000;
 const qs = require('qs');
+// const serverless = require('serverless-http');
 
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 // const { isValidElement } = require('react');
 
-app.use(cors());
+const corsOptions = {
+  origin: 'http://localhost:5173', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'], 
+};
+
+// Apply CORS to all routes
+app.use(cors(corsOptions));
+
 app.use(express.json())
 app.use(express.urlencoded());
 app.get('/', (req, res) => {
@@ -17,7 +25,7 @@ app.get('/', (req, res) => {
 })
 
 
-const uri = "mongodb+srv://uni_event_server:V2GSIEJyXlcJnnB8@cluster0.n0bjr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.n0bjr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -120,6 +128,11 @@ async function run() {
         console.log('USER ALREADY EXIST')
       }
 
+    })
+    app.patch('/users/:email', async(req,res)=>{
+       const email=req.params.email;
+       const user= await userCollestion.findOne({ email: email})
+       
     })
 app.get('/event', async (req, res) => {
   const query = req.query;
@@ -246,6 +259,22 @@ app.get('/event', async (req, res) => {
 
       }
     })
+ app.delete('/wishlist/:id', async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const result = await wishlistCollection.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount > 0) {
+      res.send({ success: true, message: "Wishlist item deleted", deletedCount: result.deletedCount });
+    } else {
+      res.status(404).send({ success: false, message: "Wishlist item not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting wishlist:", error);
+    res.status(500).send({ success: false, message: "Internal server error" });
+  }
+});
     //     Store ID: mysha67a089e21f898
     // Store Password (API/Secret Key): mysha67a089e21f898@ssl
     app.post('/create-ssl-payment', async (req, res) => {
@@ -312,6 +341,18 @@ app.get('/event', async (req, res) => {
       // console.log("SSLCommerz response:", response.data);
     })
 
+app.get('/payments/:email/:trxid', async (req, res) => {
+  const email = req.params.email;
+  const trxid = req.params.trxid;
+
+  try {
+    const payment = await paymentCollection.find({ userEmail: email, trxId: trxid }).toArray();
+    res.send(payment);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Server error fetching payment' });
+  }
+});
 
     app.post('/success-payment', async (req, res) => {
       const successPay = req.body;
@@ -324,12 +365,14 @@ const isValid=await axios.get(`https://sandbox.sslcommerz.com/validator/api/vali
     //update
     else{
       const updatePayment = await paymentCollection.updateOne({trxId:isValid?.data?.tran_id},
+        
         {
           $set:{
             paymentStatus:"success"
           }
         })
-        res.redirect('http://localhost:5173/success-payment');
+        const trxId=isValid?.data?.tran_id
+        res.redirect(`http://localhost:5173/success-payment/${trxId}`);
         console.log(updatePayment,"updatePayment")
     }
     })
@@ -359,3 +402,4 @@ run().catch(console.dir);
 app.listen(port, () => {
   console.log(`mysha is running on port ${port}`)
 })
+// module.exports = serverless(app);
