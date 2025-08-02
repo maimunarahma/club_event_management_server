@@ -334,9 +334,18 @@ app.get('/event', async (req, res) => {
         }
       });
       const paymentUrl = response?.data?.GatewayPageURL;
-
-      const amount = await paymentCollection.insertOne(payment);
+    //  const {eventId}=req.body
+    //  const {userEmail}=req.body
+    //  const uni=await userCollestion.findOne({email:userEmail})
+    //   const amount = await paymentCollection.insertOne(payment);
+    //   const getEvent= await EventCollection.findOne({_id: eventId})
+    //     const participant=await EventCollection.updateOne({_id: ObjectId(eventId)},{ $set: {
+    //       participants: [
+    //        {email: userEmail ,university:uni.universityName}
+    //       ]
+    //     }})
       res.send({ paymentUrl })
+
       // console.log(paymentUrl, "paymentUrl")
       // console.log("SSLCommerz response:", response.data);
     })
@@ -361,13 +370,14 @@ app.get('/payments/:email/:trxid', async (req, res) => {
       const successPay = req.body;
       // console.log("Payment successful:", successPay);
 const isValid=await axios.get(`https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${successPay.val_id}&store_id=mysha67a089e21f898&store_passwd=mysha67a089e21f898@ssl&v=1&format=json`);
-    console.log(isValid,"isValid")
+    // console.log(isValid,"isValid")
     if(isValid?.data?.status!="VALID"){
       res.send({message:"Payment is not valid"})
     }
     //update
     else{
       const updatePayment = await paymentCollection.updateOne({trxId:isValid?.data?.tran_id},
+
         
         {
           $set:{
@@ -375,8 +385,18 @@ const isValid=await axios.get(`https://sandbox.sslcommerz.com/validator/api/vali
           }
         })
         const trxId=isValid?.data?.tran_id
+         const {eventId,userEmail}=await paymentCollection.findOne({trxId:isValid?.data?.tran_id})
+         console.log(eventId)
+     
+     const uni=await userCollestion.findOne({email:userEmail})
+     console.log(uni)
+        const participant=await EventCollection.updateOne({_id:new ObjectId(eventId)},{ $push: {
+          participants: [
+           {email: userEmail ,university:uni.universityName}
+          ]
+        }})
         res.redirect(`http://localhost:5173/success-payment/${trxId}`);
-        console.log(updatePayment,"updatePayment")
+        // console.log(updatePayment,"updatePayment")
     }
     })
     app.post('/news', async (req, res) => {
