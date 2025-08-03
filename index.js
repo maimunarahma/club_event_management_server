@@ -244,7 +244,9 @@ app.get('/event', async (req, res) => {
         res.status(500).send({ error: 'Something went wrong' });
       }
     })
-    app.post('/wishlist/:email', async (req, res) => {
+    app.post('/wishlist/:email', 
+      
+      async (req, res) => {
       const wish = req.body;
       const email = req.params.email;
       console.log(wish)
@@ -354,7 +356,38 @@ app.get('/payments/:email/:trxid', async (req, res) => {
     res.status(500).send({ message: 'Server error fetching payment' });
   }
 });
+app.get('/success-payment', async (req, res) => {
+  try {
+    const { val_id } = req.query;
 
+    const isValid = await axios.get(`https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${val_id}&store_id=mysha67a089e21f898&store_passwd=mysha67a089e21f898@ssl&v=1&format=json`);
+
+    if (isValid?.data?.status !== "VALID") {
+      return res.status(400).send("Payment is not valid");
+    }
+
+    const trxId = isValid?.data?.tran_id;
+
+    await paymentCollection.updateOne({ trxId }, { $set: { paymentStatus: "success" } });
+
+    const paymentDoc = await paymentCollection.findOne({ trxId });
+    if (!paymentDoc) return res.status(404).send("Transaction not found");
+
+    const { eventId, userEmail } = paymentDoc;
+    const uni = await userCollestion.findOne({ email: userEmail });
+    if (!uni) return res.status(404).send("User university not found");
+
+    await EventCollection.updateOne(
+      { _id: new ObjectId(eventId) },
+      { $push: { participants: { email: userEmail, university: uni.universityName } } }
+    );
+
+    res.redirect(`https://your-frontend-url.com/success-payment/${trxId}`);
+  } catch (error) {
+    console.error("GET /success-payment error:", error);
+    res.status(500).send("Server error");
+  }
+});
    app.post('/success-payment', async (req, res) => {
   try {
     const successPay = req.body;
