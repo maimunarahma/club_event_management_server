@@ -355,42 +355,43 @@ app.get('/payments/:email/:trxid', async (req, res) => {
   }
 });
 
-    app.post('/success-payment', async (req, res) => {
-      const successPay = req.body;
-      console.log("Payment successful:", successPay);
-const isValid=await axios.get(`https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${successPay.val_id}&store_id=mysha67a089e21f898&store_passwd=mysha67a089e21f898@ssl&v=1&format=json`);
-    // console.log(isValid,"isValid")
-    console.log(isValid)
-    if(isValid?.data?.status!="VALID"){
-      res.send({message:"Payment is not valid"})
-    }
-    //update
-    else{
-      const updatePayment = await paymentCollection.updateOne({trxId:isValid?.data?.tran_id},
+   app.post('/success-payment', async (req, res) => {
+  try {
+    const successPay = req.body;
+    console.log("Payment successful:", successPay);
 
-        
-        {
-          $set:{
-            paymentStatus:"success"
-          }
-        })
-        const trxId=isValid?.data?.tran_id
-const paymentDoc = await paymentCollection.findOne({ trxId: isValid?.data?.tran_id });
+    const isValid = await axios.get(`https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${successPay.val_id}&store_id=mysha67a089e21f898&store_passwd=mysha67a089e21f898@ssl&v=1&format=json`);
 
-const { eventId, userEmail } = paymentDoc;
-         console.log(eventId,userEmail)
-     
-     const uni=await userCollestion.findOne({email:userEmail})
-     console.log(uni)
-        const participant=await EventCollection.updateOne({_id:new ObjectId(eventId)},{ $push: {
-          participants: 
-           {email: userEmail ,university:uni.universityName}
-          
-        }})
-        res.redirect(`http://localhost:5173/success-payment/${trxId}`);
-        // console.log(updatePayment,"updatePayment")
+    if (isValid?.data?.status !== "VALID") {
+      return res.status(400).send({ message: "Payment is not valid" });
     }
-    })
+
+    const trxId = isValid?.data?.tran_id;
+
+    const updatePayment = await paymentCollection.updateOne(
+      { trxId },
+      { $set: { paymentStatus: "success" } }
+    );
+
+    const paymentDoc = await paymentCollection.findOne({ trxId });
+    if (!paymentDoc) return res.status(404).send({ message: "Transaction not found" });
+
+    const { eventId, userEmail } = paymentDoc;
+    const uni = await userCollestion.findOne({ email: userEmail });
+    if (!uni) return res.status(404).send({ message: "User university not found" });
+
+    await EventCollection.updateOne(
+      { _id: new ObjectId(eventId) },
+      { $push: { participants: { email: userEmail, university: uni.universityName } } }
+    );
+
+    res.redirect(`http://localhost:5173/success-payment/${trxId}`);
+  } catch (error) {
+    console.error("Payment error:", error);
+    res.status(500).send({ message: "Server error", error: error.message });
+  }
+});
+
     app.post('/news', async (req, res) => {
       const news = req.body;
       const isExist = await newsCollection.findOne({ title: news.title });
