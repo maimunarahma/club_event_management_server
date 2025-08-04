@@ -284,6 +284,10 @@ app.get('/event', async (req, res) => {
       // console.log(payment, "payment")
       const trxid = new ObjectId().toString();
       payment.trxId = trxid;
+      
+  payment.paymentStatus = "pending"; // optional
+  payment.createdAt = new Date(); // optional
+  await paymentCollection.insertOne(payment); 
       const initiate = {
         store_id: "mysha67a089e21f898",
         store_passwd: "mysha67a089e21f898@ssl",
@@ -392,21 +396,21 @@ console.log("Looking for trxId:", trxId);
    app.post('/success-payment', async (req, res) => {
   try {
     const successPay = req.body;
-    console.log("Payment successful:", successPay);
+    // console.log("Payment successful:", successPay);
 
     const isValid = await axios.get(`https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${successPay.val_id}&store_id=mysha67a089e21f898&store_passwd=mysha67a089e21f898@ssl&v=1&format=json`);
-
+  console.log("isValid",isValid)
     if (isValid?.data?.status !== "VALID") {
       return res.status(400).send({ message: "Payment is not valid" });
     }
 
     const trxId = isValid?.data?.tran_id;
-
+console.log("trxid",trxId)
     const updatePayment = await paymentCollection.updateOne(
       { trxId },
       { $set: { paymentStatus: "success" } }
     );
-
+console.log(updatePayment)
     const paymentDoc = await paymentCollection.findOne({ trxId });
     if (!paymentDoc) return res.status(404).send({ message: "Transaction not found" });
 
