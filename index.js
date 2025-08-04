@@ -369,6 +369,7 @@ app.get('/success-payment', async (req, res) => {
     const trxId = isValid?.data?.tran_id;
 
     await paymentCollection.updateOne({ trxId }, { $set: { paymentStatus: "success" } });
+console.log("Looking for trxId:", trxId);
 
     const paymentDoc = await paymentCollection.findOne({ trxId });
     if (!paymentDoc) return res.status(404).send("Transaction not found");
