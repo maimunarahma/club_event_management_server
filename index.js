@@ -106,7 +106,13 @@ async function run() {
       }
       console.log(exist)
     })
-
+   app.patch('/club', async(req,res)=>{
+    const id=req.body.id
+    const name=req.body.name
+    console.log(req.body)
+     const result=await ClubCollection.updateOne({_id:new ObjectId(id)},{$set:{ name:name}})
+     res.send(result)
+   })
     app.get('/users', async (req, res) => {
       const result = await userCollestion.find().toArray()
       res.send(result)
@@ -132,6 +138,24 @@ async function run() {
     app.patch('/users/:email', async(req,res)=>{
        const email=req.params.email;
        const user= await userCollestion.findOne({ email: email})
+       
+       console.log(req.body)
+       const name=req.body.name
+       const newPass= req.body.newPass;
+       const oldPass= req.body.oldPass
+       
+       if(name){
+         const result= await userCollestion.updateOne({email:email},{$set:{name:name}})
+         res.send(result)
+       }
+      else if(oldPass && newPass && user?.password==oldPass){
+    const result= await userCollestion.updateOne({email:email},{$set:{password:newPass}})
+    res.send(result)
+       }
+       else{
+         res.send("password doesnt match")
+       }
+   
        
     })
 app.get('/event', async (req, res) => {
