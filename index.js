@@ -469,6 +469,10 @@ async function run() {
       const result =await favouriteCollection.insertOne({ email:email, club: club.clubId, isFavourite: club.isFav})
       res.send(result)
  })
+ app.get('/favourites', async(req,res)=>{
+    const result=await favouriteCollection.find({}).toArray()
+    res.send(result)
+ })
     app.post('/news', async (req, res) => {
       const news = req.body;
       const isExist = await newsCollection.findOne({ title: news.title });
