@@ -245,6 +245,10 @@ async function run() {
         res.status(500).json({ error: "Internal server error" });
       }
     });
+     app.get('/participants', async (req, res) => {
+       const result= await participantCollection.find({}).toArray()
+       res.send(result)
+    })
     app.put('/participants', async (req, res) => {
       const participant = req.body;
       console.log(participant)
