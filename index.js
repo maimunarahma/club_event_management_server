@@ -11,8 +11,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 // const { isValidElement } = require('react');
 
 const corsOptions = {
-  origin: 'http://localhost:5173', 
-  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'], 
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
 };
 
 // Apply CORS to all routes
@@ -51,6 +51,7 @@ async function run() {
     const paymentCollection = uniEventDB.collection('payments');
     const wishlistCollection = uniEventDB.collection('wishlists');
     const newsCollection = uniEventDB.collection('news');
+    const favouriteCollection = uniEventDB.collection('favourites')
     await client.db("admin").command({ ping: 1 });
     app.post('/uni', async (req, res) => {
       const uni = {
@@ -106,13 +107,13 @@ async function run() {
       }
       console.log(exist)
     })
-   app.patch('/club', async(req,res)=>{
-    const id=req.body.id
-    const name=req.body.name
-    console.log(req.body)
-     const result=await ClubCollection.updateOne({_id:new ObjectId(id)},{$set:{ name:name}})
-     res.send(result)
-   })
+    app.patch('/club', async (req, res) => {
+      const id = req.body.id
+      const name = req.body.name
+      console.log(req.body)
+      const result = await ClubCollection.updateOne({ _id: new ObjectId(id) }, { $set: { name: name } })
+      res.send(result)
+    })
     app.get('/users', async (req, res) => {
       const result = await userCollestion.find().toArray()
       res.send(result)
@@ -135,83 +136,83 @@ async function run() {
       }
 
     })
-    app.patch('/users/:email', async(req,res)=>{
-       const email=req.params.email;
-       const user= await userCollestion.findOne({ email: email})
-       
-       console.log(req.body)
-       const name=req.body.name
-       const newPass= req.body.newPass;
-       const oldPass= req.body.oldPass
-       
-       if(name){
-         const result= await userCollestion.updateOne({email:email},{$set:{name:name}})
-         res.send(result)
-       }
-      else if(oldPass && newPass && user?.password==oldPass){
-    const result= await userCollestion.updateOne({email:email},{$set:{password:newPass}})
-    res.send(result)
-       }
-       else{
-         res.send("password doesnt match")
-       }
-   
-       
+    app.patch('/users/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = await userCollestion.findOne({ email: email })
+
+      console.log(req.body)
+      const name = req.body.name
+      const newPass = req.body.newPass;
+      const oldPass = req.body.oldPass
+
+      if (name) {
+        const result = await userCollestion.updateOne({ email: email }, { $set: { name: name } })
+        res.send(result)
+      }
+      else if (oldPass && newPass && user?.password == oldPass) {
+        const result = await userCollestion.updateOne({ email: email }, { $set: { password: newPass } })
+        res.send(result)
+      }
+      else {
+        res.send("password doesnt match")
+      }
+
+
     })
-app.get('/event', async (req, res) => {
-  const query = req.query;
-  console.log("query:", query);
+    app.get('/event', async (req, res) => {
+      const query = req.query;
+      console.log("query:", query);
 
-  let allEvents = [];
+      let allEvents = [];
 
-  try {
-    allEvents = await EventCollection.find({}).toArray(); // ensure plain object
-  } catch (err) {
-    return res.status(500).send({ error: "Failed to fetch events" });
-  }
+      try {
+        allEvents = await EventCollection.find({}).toArray(); // ensure plain object
+      } catch (err) {
+        return res.status(500).send({ error: "Failed to fetch events" });
+      }
 
-  let filtered = [];
-  const now = new Date();
-  if (!query.query || query.query === 'all') {
-    return res.send(allEvents);
-  }
-  if (query.query === 'today') {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
+      let filtered = [];
+      const now = new Date();
+      if (!query.query || query.query === 'all') {
+        return res.send(allEvents);
+      }
+      if (query.query === 'today') {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
 
-    filtered = allEvents.filter(e => {
-      const d = new Date(e.eventDate);
-      return d >= start && d <= end;
+        filtered = allEvents.filter(e => {
+          const d = new Date(e.eventDate);
+          return d >= start && d <= end;
+        });
+
+      } else if (query.query === 'week') {
+        const start = new Date();
+        const end = new Date();
+        end.setDate(start.getDate() + 7);
+
+        filtered = allEvents.filter(e => {
+          const d = new Date(e.eventDate);
+          return d >= start && d <= end;
+        });
+
+      } else if (query.query === 'month') {
+        const start = new Date();
+        const end = new Date();
+        end.setMonth(start.getMonth() + 1);
+
+        filtered = allEvents.filter(e => {
+          const d = new Date(e.eventDate);
+          return d >= start && d <= end;
+        });
+
+      } else {
+        filtered = allEvents;
+      }
+
+      res.send(filtered);
     });
-
-  } else if (query.query === 'week') {
-    const start = new Date();
-    const end = new Date();
-    end.setDate(start.getDate() + 7);
-
-    filtered = allEvents.filter(e => {
-      const d = new Date(e.eventDate);
-      return d >= start && d <= end;
-    });
-
-  } else if (query.query === 'month') {
-    const start = new Date();
-    const end = new Date();
-    end.setMonth(start.getMonth() + 1);
-
-    filtered = allEvents.filter(e => {
-      const d = new Date(e.eventDate);
-      return d >= start && d <= end;
-    });
-
-  } else {
-    filtered = allEvents;
-  }
-
-  res.send(filtered);
-});
 
     app.post('/event', async (req, res) => {
       const event = req.body;
@@ -268,39 +269,39 @@ app.get('/event', async (req, res) => {
         res.status(500).send({ error: 'Something went wrong' });
       }
     })
-    app.post('/wishlist/:email', 
-      
+    app.post('/wishlist/:email',
+
       async (req, res) => {
-      const wish = req.body;
-      const email = req.params.email;
-      console.log(wish)
-      const isExist = await participantCollection.findOne({ email: email, eventId: wish.eventId })
-      if (!isExist) {
-        const result = await wishlistCollection.insertOne(wish)
-        res.send(result);
+        const wish = req.body;
+        const email = req.params.email;
+        console.log(wish)
+        const isExist = await participantCollection.findOne({ email: email, eventId: wish.eventId })
+        if (!isExist) {
+          const result = await wishlistCollection.insertOne(wish)
+          res.send(result);
+        }
+        else {
+          console.log('ALREADY WISHLISTED')
+          res.send({ message: 'ALREADY WISHLISTED' })
+
+        }
+      })
+    app.delete('/wishlist/:id', async (req, res) => {
+      const id = req.params.id;
+
+      try {
+        const result = await wishlistCollection.deleteOne({ _id: new ObjectId(id) });
+
+        if (result.deletedCount > 0) {
+          res.send({ success: true, message: "Wishlist item deleted", deletedCount: result.deletedCount });
+        } else {
+          res.status(404).send({ success: false, message: "Wishlist item not found" });
+        }
+      } catch (error) {
+        console.error("Error deleting wishlist:", error);
+        res.status(500).send({ success: false, message: "Internal server error" });
       }
-      else {
-        console.log('ALREADY WISHLISTED')
-        res.send({ message: 'ALREADY WISHLISTED' })
-
-      }
-    })
- app.delete('/wishlist/:id', async (req, res) => {
-  const id = req.params.id;
-
-  try {
-    const result = await wishlistCollection.deleteOne({ _id: new ObjectId(id) });
-
-    if (result.deletedCount > 0) {
-      res.send({ success: true, message: "Wishlist item deleted", deletedCount: result.deletedCount });
-    } else {
-      res.status(404).send({ success: false, message: "Wishlist item not found" });
-    }
-  } catch (error) {
-    console.error("Error deleting wishlist:", error);
-    res.status(500).send({ success: false, message: "Internal server error" });
-  }
-});
+    });
     //     Store ID: mysha67a089e21f898
     // Store Password (API/Secret Key): mysha67a089e21f898@ssl
     app.post('/create-ssl-payment', async (req, res) => {
@@ -308,10 +309,10 @@ app.get('/event', async (req, res) => {
       // console.log(payment, "payment")
       const trxid = new ObjectId().toString();
       payment.trxId = trxid;
-      
-  payment.paymentStatus = "pending"; // optional
-  payment.createdAt = new Date(); // optional
-  await paymentCollection.insertOne(payment); 
+
+      payment.paymentStatus = "pending"; // optional
+      payment.createdAt = new Date(); // optional
+      await paymentCollection.insertOne(payment);
       const initiate = {
         store_id: "mysha67a089e21f898",
         store_passwd: "mysha67a089e21f898@ssl",
@@ -364,111 +365,126 @@ app.get('/event', async (req, res) => {
         }
       });
       const paymentUrl = response?.data?.GatewayPageURL;
-  
+
       res.send({ paymentUrl })
 
     })
- app.get('/payments',async(req,res)=>{
-    const pay=await paymentCollection.find().toArray()
-    res.send(pay)
+    app.get('/payments', async (req, res) => {
+      const pay = await paymentCollection.find().toArray()
+      res.send(pay)
+    })
+    app.get('/payments/:email/:trxid', async (req, res) => {
+      const email = req.params.email;
+      const trxid = req.params.trxid;
+
+      try {
+        const payment = await paymentCollection.find({ userEmail: email, trxId: trxid }).toArray();
+        res.send(payment);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Server error fetching payment' });
+      }
+    });
+    app.get('/success-payment', async (req, res) => {
+      try {
+        const { val_id } = req.query;
+
+        const isValid = await axios.get(`https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${val_id}&store_id=mysha67a089e21f898&store_passwd=mysha67a089e21f898@ssl&v=1&format=json`);
+
+        if (isValid?.data?.status !== "VALID") {
+          return res.status(400).send("Payment is not valid");
+        }
+
+        const trxId = isValid?.data?.tran_id;
+
+        await paymentCollection.updateOne({ trxId }, { $set: { paymentStatus: "success" } });
+        console.log("Looking for trxId:", trxId);
+
+        const paymentDoc = await paymentCollection.findOne({ trxId });
+        if (!paymentDoc) return res.status(404).send("Transaction not found");
+
+        const { eventId, userEmail } = paymentDoc;
+        const uni = await userCollestion.findOne({ email: userEmail });
+        if (!uni) return res.status(404).send("User university not found");
+
+        await EventCollection.updateOne(
+          { _id: new ObjectId(eventId) },
+          { $push: { participants: { email: userEmail, university: uni.universityName } } }
+        );
+
+        res.redirect(`https://your-frontend-url.com/success-payment/${trxId}`);
+      } catch (error) {
+        console.error("GET /success-payment error:", error);
+        res.status(500).send("Server error");
+      }
+    });
+    app.post('/success-payment', async (req, res) => {
+      try {
+        const successPay = req.body;
+        // console.log("Payment successful:", successPay);
+
+        const isValid = await axios.get(`https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${successPay.val_id}&store_id=mysha67a089e21f898&store_passwd=mysha67a089e21f898@ssl&v=1&format=json`);
+        console.log("isValid", isValid)
+        if (isValid?.data?.status !== "VALID") {
+          return res.status(400).send({ message: "Payment is not valid" });
+        }
+
+        const trxId = isValid?.data?.tran_id;
+        console.log("trxid", trxId)
+        const updatePayment = await paymentCollection.updateOne(
+          { trxId },
+          { $set: { paymentStatus: "success" } }
+        );
+        console.log(updatePayment)
+        const paymentDoc = await paymentCollection.findOne({ trxId });
+        if (!paymentDoc) return res.status(404).send({ message: "Transaction not found" });
+
+        const { eventId, userEmail } = paymentDoc;
+        const uni = await userCollestion.findOne({ email: userEmail });
+        if (!uni) return res.status(404).send({ message: "User university not found" });
+
+        await EventCollection.updateOne(
+          { _id: new ObjectId(eventId) },
+          { $push: { participants: { email: userEmail, university: uni.universityName } } }
+        );
+
+        res.redirect(`http://localhost:5173/success-payment/${trxId}`);
+      } catch (error) {
+        console.error("Payment error:", error);
+        res.status(500).send({ message: "Server error", error: error.message });
+      }
+    });
+
+    app.post('/favourites/:email', async (req, res) => {
+      const email = req.params.email
+     const club=req.body
+       const existing = await favouriteCollection.findOne({
+    email: email,
+    club: club.clubId,
+    isFavourite: club.isFav
+  });
+ if(existing){
+   return res.send({inserted:false, message:"already exist"})
+ }
+      const result =await favouriteCollection.insertOne({ email:email, club: club.clubId, isFavourite: club.isFav})
+      res.send(result)
  })
-app.get('/payments/:email/:trxid', async (req, res) => {
-  const email = req.params.email;
-  const trxid = req.params.trxid;
-
-  try {
-    const payment = await paymentCollection.find({ userEmail: email, trxId: trxid }).toArray();
-    res.send(payment);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({ message: 'Server error fetching payment' });
-  }
-});
-app.get('/success-payment', async (req, res) => {
-  try {
-    const { val_id } = req.query;
-
-    const isValid = await axios.get(`https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${val_id}&store_id=mysha67a089e21f898&store_passwd=mysha67a089e21f898@ssl&v=1&format=json`);
-
-    if (isValid?.data?.status !== "VALID") {
-      return res.status(400).send("Payment is not valid");
-    }
-
-    const trxId = isValid?.data?.tran_id;
-
-    await paymentCollection.updateOne({ trxId }, { $set: { paymentStatus: "success" } });
-console.log("Looking for trxId:", trxId);
-
-    const paymentDoc = await paymentCollection.findOne({ trxId });
-    if (!paymentDoc) return res.status(404).send("Transaction not found");
-
-    const { eventId, userEmail } = paymentDoc;
-    const uni = await userCollestion.findOne({ email: userEmail });
-    if (!uni) return res.status(404).send("User university not found");
-
-    await EventCollection.updateOne(
-      { _id: new ObjectId(eventId) },
-      { $push: { participants: { email: userEmail, university: uni.universityName } } }
-    );
-
-    res.redirect(`https://your-frontend-url.com/success-payment/${trxId}`);
-  } catch (error) {
-    console.error("GET /success-payment error:", error);
-    res.status(500).send("Server error");
-  }
-});
-   app.post('/success-payment', async (req, res) => {
-  try {
-    const successPay = req.body;
-    // console.log("Payment successful:", successPay);
-
-    const isValid = await axios.get(`https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${successPay.val_id}&store_id=mysha67a089e21f898&store_passwd=mysha67a089e21f898@ssl&v=1&format=json`);
-  console.log("isValid",isValid)
-    if (isValid?.data?.status !== "VALID") {
-      return res.status(400).send({ message: "Payment is not valid" });
-    }
-
-    const trxId = isValid?.data?.tran_id;
-console.log("trxid",trxId)
-    const updatePayment = await paymentCollection.updateOne(
-      { trxId },
-      { $set: { paymentStatus: "success" } }
-    );
-console.log(updatePayment)
-    const paymentDoc = await paymentCollection.findOne({ trxId });
-    if (!paymentDoc) return res.status(404).send({ message: "Transaction not found" });
-
-    const { eventId, userEmail } = paymentDoc;
-    const uni = await userCollestion.findOne({ email: userEmail });
-    if (!uni) return res.status(404).send({ message: "User university not found" });
-
-    await EventCollection.updateOne(
-      { _id: new ObjectId(eventId) },
-      { $push: { participants: { email: userEmail, university: uni.universityName } } }
-    );
-
-    res.redirect(`http://localhost:5173/success-payment/${trxId}`);
-  } catch (error) {
-    console.error("Payment error:", error);
-    res.status(500).send({ message: "Server error", error: error.message });
-  }
-});
-
     app.post('/news', async (req, res) => {
       const news = req.body;
       const isExist = await newsCollection.findOne({ title: news.title });
       if (isExist) {
         console.log('NEWS ALREADY EXIST');
         res.send({ message: 'NEWS ALREADY EXIST' });
-      } else{
+      } else {
         const result = await newsCollection.insertOne(news);
         res.send(result);
-      }})
-          app.get('/news', async (req, res) => {
-            const result =await newsCollection.find().toArray();
-            res.send(result);
-          })
-      // 
+      }
+    })
+    app.get('/news', async (req, res) => {
+      const result = await newsCollection.find().toArray();
+      res.send(result);
+    })
+    // 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
