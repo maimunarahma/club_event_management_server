@@ -11,7 +11,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 // const { isValidElement } = require('react');
 
 const corsOptions = {
-  origin: 'http://localhost:5173',
+  origin: ['http://localhost:5173','https://univarsity-event.web.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
 };
 
