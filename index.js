@@ -179,7 +179,9 @@ async function run() {
       } else if (query === "event_manager") {
         filtered = allEvents.filter((ev) => ev.eventManageEmail === email);
       } else if (query === "club_admin") {
-        filtered = allEvents.filter((ev) => ev.clubId?.toString() === clubId);
+        
+
+        filtered = allEvents.filter((ev) => ev.clubId?.toString() === clubId.toString());
       } else if (query === "today") {
         const start = new Date();
         start.setHours(0, 0, 0, 0);
