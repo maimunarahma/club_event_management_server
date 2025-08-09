@@ -160,9 +160,9 @@ async function run() {
 
     })
     app.get('/event', async (req, res) => {
-      const query = req.query;
+      const {query ,email } = req.query;
       console.log("query:", query);
-
+      console.log(email)
       let allEvents = [];
 
       try {
@@ -173,10 +173,14 @@ async function run() {
 
       let filtered = [];
       const now = new Date();
-      if (!query.query || query.query === 'all') {
+      if (!query || query === 'all') {
         return res.send(allEvents);
       }
-      if (query.query === 'today') {
+      if(query==='event_manager'){
+        const filteredEvent=allEvents.filter(ev => ev.eventManageEmail === email)
+        res.send(filteredEvent)
+      }
+     else if (query === 'today') {
         const start = new Date();
         start.setHours(0, 0, 0, 0);
         const end = new Date();
@@ -187,7 +191,7 @@ async function run() {
           return d >= start && d <= end;
         });
 
-      } else if (query.query === 'week') {
+      } else if (query === 'week') {
         const start = new Date();
         const end = new Date();
         end.setDate(start.getDate() + 7);
@@ -197,7 +201,7 @@ async function run() {
           return d >= start && d <= end;
         });
 
-      } else if (query.query === 'month') {
+      } else if (query === 'month') {
         const start = new Date();
         const end = new Date();
         end.setMonth(start.getMonth() + 1);
