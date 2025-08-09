@@ -163,65 +163,53 @@ async function run() {
     app.get("/event", async (req, res) => {
       const { query, email, clubId } = req.query;
       console.log("query:", query);
-      console.log(email, clubId);
-      let allEvents = [];
+      console.log("email:", email, "clubId:", clubId);
 
+      let allEvents = [];
       try {
-        allEvents = await EventCollection.find({}).toArray(); // ensure plain object
+        allEvents = await EventCollection.find({}).toArray();
       } catch (err) {
         return res.status(500).send({ error: "Failed to fetch events" });
       }
 
       let filtered = [];
-      const now = new Date();
-      if (!query || query === "all") {
-        return res.send(allEvents);
-      }
-      if (query === "event_manager") {
-        const filteredEvent = allEvents.filter(
-          (ev) => ev.eventManageEmail === email
-        );
-        return res.send(filteredEvent);
-      } else if (query === "club_admin") {
-        const filteredEvent = allEvents.filter((ev) => ev.clubId === clubId);
 
-        return res.send(filteredEvent);
+      if (!query || query === "all") {
+        filtered = allEvents;
+      } else if (query === "event_manager") {
+        filtered = allEvents.filter((ev) => ev.eventManageEmail === email);
+      } else if (query === "club_admin") {
+        filtered = allEvents.filter((ev) => ev.clubId?.toString() === clubId);
       } else if (query === "today") {
         const start = new Date();
         start.setHours(0, 0, 0, 0);
         const end = new Date();
         end.setHours(23, 59, 59, 999);
-
         filtered = allEvents.filter((e) => {
           const d = new Date(e.eventDate);
           return d >= start && d <= end;
         });
-
-        return res.send(filtered);
       } else if (query === "week") {
         const start = new Date();
         const end = new Date();
         end.setDate(start.getDate() + 7);
-
         filtered = allEvents.filter((e) => {
           const d = new Date(e.eventDate);
           return d >= start && d <= end;
         });
-        return res.send(filtered);
       } else if (query === "month") {
         const start = new Date();
         const end = new Date();
         end.setMonth(start.getMonth() + 1);
-
         filtered = allEvents.filter((e) => {
           const d = new Date(e.eventDate);
           return d >= start && d <= end;
         });
-        return res.send(filtered);
       } else {
         filtered = allEvents;
-        return res.send(filtered);
       }
+
+      return res.send(filtered);
     });
 
     app.post("/event", async (req, res) => {
