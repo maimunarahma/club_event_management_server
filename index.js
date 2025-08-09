@@ -160,9 +160,9 @@ async function run() {
 
     })
     app.get('/event', async (req, res) => {
-      const {query ,email } = req.query;
+      const {query ,email ,clubId} = req.query;
       console.log("query:", query);
-      console.log(email)
+      console.log(email, clubId)
       let allEvents = [];
 
       try {
@@ -178,6 +178,12 @@ async function run() {
       }
       if(query==='event_manager'){
         const filteredEvent=allEvents.filter(ev => ev.eventManageEmail === email)
+        res.send(filteredEvent)
+      }
+      else if(query=== 'club_admin'){
+       
+     const filteredEvent = allEvents.filter(ev => ev.clubId === clubId);
+
         res.send(filteredEvent)
       }
      else if (query === 'today') {
